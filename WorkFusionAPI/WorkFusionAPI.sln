@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35222.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WorkFusionAPI", "WorkFusionAPI\WorkFusionAPI.csproj", "{F60FA73A-D5D9-4384-8633-758771EE63E2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F60FA73A-D5D9-4384-8633-758771EE63E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F60FA73A-D5D9-4384-8633-758771EE63E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F60FA73A-D5D9-4384-8633-758771EE63E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F60FA73A-D5D9-4384-8633-758771EE63E2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {49E4FEC8-2832-4ECB-B30C-AA7B9F924D64}
+	EndGlobalSection
+EndGlobal
