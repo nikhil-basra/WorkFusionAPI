@@ -5,10 +5,14 @@
         public int EmployeeId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
+
+        public string Gender { get; set; }        // New field
         public string Email { get; set; }
         public string Phone { get; set; }
         public string PresentAddress { get; set; }
         public string PermanentAddress { get; set; }
+        public string IDType { get; set; }        // New field
+        public string IDNumber { get; set; }      // New field
         public DateTime? DateOfBirth { get; set; }
         public int? DepartmentId { get; set; }
         public int UserId { get; set; }

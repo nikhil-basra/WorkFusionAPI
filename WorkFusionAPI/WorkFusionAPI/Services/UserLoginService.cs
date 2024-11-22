@@ -47,6 +47,44 @@ namespace WorkFusionAPI.Services
                 return null;
             }
 
+            // Fetch additional details based on the RoleId
+            string roleQuery = string.Empty;
+            if (user.RoleId == 3) // Employee
+            {
+                roleQuery = @"
+                    SELECT EmployeeId AS EntityId, CONCAT(FirstName, ' ', LastName) AS Name
+                    FROM employees
+                    WHERE UserId = @UserId AND IsActive = 1";
+            }
+            else if (user.RoleId == 2) // Manager
+            {
+                roleQuery = @"
+                    SELECT ManagerId AS EntityId, CONCAT(FirstName, ' ', LastName) AS Name
+                    FROM managers
+                    WHERE UserId = @UserId AND IsActive = 1";
+            }
+            else if (user.RoleId == 4) // Client
+            {
+                roleQuery = @"
+                    SELECT ClientId AS EntityId, CONCAT(FirstName, ' ', LastName) AS Name
+                    FROM clients
+                    WHERE UserId = @UserId AND IsActive = 1";
+            }
+
+            if (!string.IsNullOrEmpty(roleQuery))
+            {
+                var roleParams = new DynamicParameters();
+                roleParams.Add("UserId", user.UserId);
+
+                var roleDetails = await _dbGateway.ExeScalarQuery<dynamic>(roleQuery, roleParams);
+
+                if (roleDetails != null)
+                {
+                    user.EntityId = roleDetails.EntityId;
+                    user.Name = roleDetails.Name;
+                }
+            }
+
             // Generate JWT token
             return GenerateJwtToken(user);
         }
@@ -55,14 +93,23 @@ namespace WorkFusionAPI.Services
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
+            var claims = new List<Claim>
+            {
+                new Claim("UserId", user.UserId.ToString()),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.RoleId.ToString())
+            };
+
+            // Add specific claims for employee, manager, or client
+            if (user.EntityId != null)
+            {
+                claims.Add(new Claim("EntityId", user.EntityId.ToString()));
+                claims.Add(new Claim("FullName", user.Name));
+            }
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim("UserId", user.UserId.ToString()),
-                    new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Role, user.RoleId.ToString())
-                }),
+                Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(30), // Token valid for 30 minutes
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha512Signature)
             };

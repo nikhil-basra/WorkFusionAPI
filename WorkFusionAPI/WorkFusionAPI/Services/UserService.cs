@@ -117,7 +117,6 @@ namespace WorkFusionAPI.Services
         SELECT * 
         FROM Users u
         WHERE u.RoleId = @RoleId 
-        AND u.IsActive = 1
         AND NOT EXISTS (SELECT 1 FROM Clients c WHERE c.UserId = u.UserId)
         AND NOT EXISTS (SELECT 1 FROM Managers m WHERE m.UserId = u.UserId)
         AND NOT EXISTS (SELECT 1 FROM Employees e WHERE e.UserId = u.UserId);

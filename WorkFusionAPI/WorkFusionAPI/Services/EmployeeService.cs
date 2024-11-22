@@ -71,10 +71,10 @@ namespace WorkFusionAPI.Services
             newEmployee.UpdatedAt = DateTime.Now; // Assigning DateTime value directly
 
             var insertQuery = @"
-        INSERT INTO Employees (FirstName, LastName, Email, Phone, PresentAddress, PermanentAddress, 
+        INSERT INTO Employees (FirstName, LastName, Gender, Email, Phone, PresentAddress, PermanentAddress, IDType, IDNumber, 
                                DateOfBirth, DepartmentId, UserId, HireDate, CurrentSalary, EmployeeImage, 
                                IsActive, CreatedAt, UpdatedAt)
-        VALUES (@FirstName, @LastName, @Email, @Phone, @PresentAddress, @PermanentAddress, 
+        VALUES (@FirstName, @LastName, @Gender, @Email, @Phone, @PresentAddress, @PermanentAddress, @IDType, @IDNumber, 
                 @DateOfBirth, @DepartmentId, @UserId, @HireDate, @CurrentSalary, @EmployeeImage, 
                 @IsActive, @CreatedAt, @UpdatedAt)";
 
@@ -121,20 +121,23 @@ namespace WorkFusionAPI.Services
             }
 
             var query = @"
-    UPDATE Employees SET 
-        FirstName = @FirstName,
-        LastName = @LastName,
-        Email = @Email,
-        Phone = @Phone,
-        PresentAddress = @PresentAddress,
-        PermanentAddress = @PermanentAddress,
-        DateOfBirth = @DateOfBirth,
-        DepartmentId = @DepartmentId,
-        HireDate = @HireDate,
-        CurrentSalary = @CurrentSalary,
-        EmployeeImage = @EmployeeImage,  -- Only update if an image is provided
-        UpdatedAt = @UpdatedAt
-    WHERE EmployeeId = @EmployeeId AND IsActive = true";
+        UPDATE Employees SET 
+            FirstName = @FirstName,
+            LastName = @LastName,
+            Gender = @Gender,          -- New field
+            Email = @Email,
+            Phone = @Phone,
+            PresentAddress = @PresentAddress,
+            PermanentAddress = @PermanentAddress,
+            IDType = @IDType,          -- New field
+            IDNumber = @IDNumber,      -- New field
+            DateOfBirth = @DateOfBirth,
+            DepartmentId = @DepartmentId,
+            HireDate = @HireDate,
+            CurrentSalary = @CurrentSalary,
+            EmployeeImage = @EmployeeImage,
+            UpdatedAt = @UpdatedAt
+        WHERE EmployeeId = @EmployeeId AND IsActive = true";
 
             var parameters = new DynamicParameters(employee);
             var result = await _dbGateway.ExeQuery(query, parameters);

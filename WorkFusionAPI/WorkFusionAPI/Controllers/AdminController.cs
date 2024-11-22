@@ -19,14 +19,18 @@ namespace WorkFusionAPI.Controllers
         private readonly IDepartmentService _departmentService;
         private readonly IUserService _userService;
         private readonly IEmployeeService _employeeService;
-        
+        private readonly IManagerService _managerService;
+        private readonly IClientService _clientService;
 
-        public AdminController(IAdminService adminService, IDepartmentService departmentService,IUserService userService,IEmployeeService employeeService)
+
+        public AdminController(IAdminService adminService, IDepartmentService departmentService,IUserService userService,IEmployeeService employeeService, IManagerService managerService, IClientService clientService)
         {
             _adminService = adminService;
             _departmentService = departmentService;
             _userService= userService;
             _employeeService = employeeService;
+            _managerService = managerService;
+            _clientService = clientService;
         }
 
 
@@ -194,6 +198,145 @@ namespace WorkFusionAPI.Controllers
             }
 
             return StatusCode(500, "An error occurred while updating the department.");
+        }
+
+
+        //////////////////************************Manager*************************////////////////////////////////////////////////////////
+
+
+        [HttpGet("managers")]
+        public async Task<ActionResult<IEnumerable<ManagerModel>>> GetAllManagers()
+        {
+            var managers = await _managerService.GetAllManagersAsync();
+            return Ok(managers);
+        }
+
+        [HttpGet("managers/{id}")]
+        public async Task<ActionResult<ManagerModel>> GetManagerById(int id)
+        {
+            var manager = await _managerService.GetManagerByIdAsync(id);
+            if (manager == null)
+            {
+                return NotFound();
+            }
+            return Ok(manager);
+        }
+
+        [HttpPost("createManager")]
+        public async Task<IActionResult> CreateManager([FromBody] ManagerModel newManager)
+        {
+            if (newManager == null)
+            {
+                return BadRequest("Manager data is required.");
+            }
+
+            var isCreated = await _managerService.CreateManagerAsync(newManager);
+
+            if (isCreated)
+            {
+                return Ok(new { message = "Manager created successfully." });
+            }
+
+            return StatusCode(500, "An error occurred while creating the manager.");
+        }
+
+        [HttpPut("updateManager")]
+        public async Task<IActionResult> UpdateManager([FromBody] ManagerModel manager)
+        {
+            if (manager == null || manager.ManagerId == 0)
+            {
+                return BadRequest("Manager data is required.");
+            }
+
+            var isUpdated = await _managerService.UpdateManagerAsync(manager);
+
+            if (isUpdated)
+            {
+                return Ok(new { message = "Manager updated successfully." });
+            }
+
+            return StatusCode(500, "An error occurred while updating the manager.");
+        }
+
+        [HttpDelete("managers/{id}")]
+        public async Task<IActionResult> DeleteManager(int id)
+        {
+            var isDeleted = await _managerService.DeleteManagerAsync(id);
+            if (isDeleted)
+            {
+                return Ok(new { message = "Manager deleted successfully." });
+            }
+
+            return StatusCode(500, "An error occurred while deleting the manager.");
+        }
+
+
+        //***************************************Client***********************************************//
+
+        [HttpGet("clients")]
+        public async Task<ActionResult<IEnumerable<ClientModel>>> GetAllClients()
+        {
+            var clients = await _clientService.GetAllClientsAsync();
+            return Ok(clients);
+        }
+
+        [HttpGet("clients/{id}")]
+        public async Task<ActionResult<ClientModel>> GetClientById(int id)
+        {
+            var client = await _clientService.GetClientByIdAsync(id);
+            if (client == null)
+            {
+                return NotFound();
+            }
+            return Ok(client);
+        }
+
+        [HttpPost("createClient")]
+        public async Task<IActionResult> CreateClient([FromBody] ClientModel newClient)
+        {
+            if (newClient == null)
+            {
+                return BadRequest("Client data is required.");
+            }
+
+            var isCreated = await _clientService.CreateClientAsync(newClient);
+
+            if (isCreated)
+            {
+                return Ok(new { message = "Client created successfully." });
+            }
+
+            return StatusCode(500, "An error occurred while creating the client.");
+        }
+
+        [HttpPut("updateClient")]
+        public async Task<IActionResult> UpdateClient([FromBody] ClientModel client)
+        {
+            if (client == null || client.ClientId == 0)
+            {
+                return BadRequest("Client data is required.");
+            }
+
+            var isUpdated = await _clientService.UpdateClientAsync(client);
+
+            if (isUpdated)
+            {
+                return Ok(new { message = "Client updated successfully." });
+            }
+
+            return StatusCode(500, "An error occurred while updating the client.");
+        }
+
+        [HttpDelete("clients/{id}")]
+        public async Task<IActionResult> DeleteClient(int id)
+        {
+            var isDeleted = await _clientService.DeleteClientAsync(id);
+            if (isDeleted)
+            {
+                return Ok(new { message = "Client deleted successfully." });
+            }
+
+            return StatusCode(500, "An error occurred while deleting the client.");
         }
 
     }
