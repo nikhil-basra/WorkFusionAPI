@@ -52,7 +52,6 @@ namespace WorkFusionAPI.Services
             var query = @"
                 UPDATE clientsprojectrequests
                 SET 
-                    ClientID = @ClientID,
                     ProjectTitle = @ProjectTitle,
                     ProjectDescription = @ProjectDescription,
                     ProjectType = @ProjectType,
@@ -70,7 +69,6 @@ namespace WorkFusionAPI.Services
                     Attachments = @Attachments,
                     SpecialInstructions = @SpecialInstructions,
                     ManagerNotes = @ManagerNotes,
-                    IsActive = @IsActive,
                     UpdatedAt = CURRENT_TIMESTAMP
                 WHERE ProjectID = @ProjectID";
             var parameters = new DynamicParameters(projectRequest);

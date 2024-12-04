@@ -53,8 +53,10 @@ namespace WorkFusionAPI.Services
             return await _dbGateway.ExeQueryList<Users>(query);
         }
 
+
         public async Task<bool> UpdateUserIsActiveStatus(int userId, bool isActive)
         {
+            // Update the IsActive status in the Users table
             var updateUserQuery = "UPDATE Users SET IsActive = @IsActive WHERE UserId = @UserId";
             var parameters = new DynamicParameters();
             parameters.Add("@IsActive", isActive);
@@ -82,34 +84,13 @@ namespace WorkFusionAPI.Services
                     await _dbGateway.ExeQuery(specificTableUpdateQuery, parameters);
                 }
 
-                if (isActive)
-                {
-                    // Register user in UserLogin table if not already registered
-                    var checkUserExistsQuery = "SELECT COUNT(1) FROM UserLogin WHERE UserId = @UserId";
-                    bool userExists = await _dbGateway.ExeScalarQuery<int>(checkUserExistsQuery, parameters) > 0;
-
-                    if (!userExists)
-                    {
-                        var registerUserQuery = @"
-                    INSERT INTO UserLogin (RoleId, UserId, Username, PasswordHash) 
-                    SELECT RoleId, UserId, Username, PasswordHash 
-                    FROM Users 
-                    WHERE UserId = @UserId";
-                        await _dbGateway.ExeQuery(registerUserQuery, parameters);
-                    }
-                }
-                else
-                {
-                    // Remove user from UserLogin table if already registered
-                    var deleteUserQuery = "DELETE FROM UserLogin WHERE UserId = @UserId";
-                    await _dbGateway.ExeQuery(deleteUserQuery, parameters);
-                }
-
                 return true;
             }
 
             return false;
         }
+
+
         public async Task<IEnumerable<Users>> GetUsersByRoleIdAsync(int roleId)
         {
             // Define the query to get users by role ID and exclude already registered users
@@ -128,6 +109,67 @@ namespace WorkFusionAPI.Services
             // Execute the query and return the list of users
             return await _dbGateway.ExeQueryList<Users>(query, parameters);
         }
+
+
+
+
+        //----------------reset password-------------------//
+        public async Task<bool> VerifyUserCredentials(int userId, string username, string password)
+        {
+            // Hash the provided password
+            string hashedPassword = HashPassword(password);
+
+            // Query to check credentials in the Users table
+            string query = @"
+    SELECT COUNT(1)
+    FROM Users
+    WHERE UserId = @UserId AND Username = @Username AND PasswordHash = @PasswordHash";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("UserId", userId);
+            parameters.Add("Username", username);
+            parameters.Add("PasswordHash", hashedPassword);
+
+            // Check if the user exists in the Users table
+            return await _dbGateway.ExeScalarQuery<int>(query, parameters) > 0;
+        }
+
+        public async Task<bool> ResetPassword(int userId, string newPassword)
+        {
+            // Encrypt the new password
+            string hashedPassword = HashPassword(newPassword);
+
+            // Update password in the Users table
+            string updateUsersQuery = @"
+    UPDATE Users
+    SET PasswordHash = @PasswordHash
+    WHERE UserId = @UserId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("PasswordHash", hashedPassword);
+            parameters.Add("UserId", userId);
+
+            var usersResult = await _dbGateway.ExeQuery(updateUsersQuery, parameters);
+
+            return usersResult > 0;
+        }
+
+        private string HashPassword(string password)
+        {
+            using (SHA512 sha512 = SHA512.Create())
+            {
+                byte[] bytes = sha512.ComputeHash(Encoding.UTF8.GetBytes(password));
+                StringBuilder builder = new StringBuilder();
+                for (int i = 0; i < bytes.Length; i++)
+                {
+                    builder.Append(bytes[i].ToString("x2"));
+                }
+                return builder.ToString();
+            }
+        }
+
+
+
 
     }
 }

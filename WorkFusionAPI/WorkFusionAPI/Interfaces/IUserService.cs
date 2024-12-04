@@ -15,5 +15,9 @@ namespace WorkFusionAPI.Interfaces
         Task<IEnumerable<Users>> GetUsersByRoleIdAsync(int roleId);
 
 
+        // New Methods for Password Reset
+        Task<bool> VerifyUserCredentials(int userId, string username, string password);
+        Task<bool> ResetPassword(int userId, string newPassword);
+
     }
 }

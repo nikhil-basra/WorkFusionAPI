@@ -26,4 +26,19 @@
     {
         public bool IsActive { get; set; }
     }
+
+
+
+
+    public class ForgotPasswordModel
+    {
+        public string Email { get; set; }
+    }
+
+    public class ResetPasswordModel
+    {
+        public string Email { get; set; }
+        public string OTP { get; set; }
+        public string NewPassword { get; set; }
+    }
 }

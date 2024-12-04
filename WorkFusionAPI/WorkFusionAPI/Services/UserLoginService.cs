@@ -26,24 +26,25 @@ namespace WorkFusionAPI.Services
             // Hash the provided password using SHA-512
             string hashedPassword = HashPassword(loginModel.Password);
 
-            // Query to check if the RoleId, Username, and PasswordHash match
+            // Query to check if RoleId, (Username or Email), PasswordHash match, and IsActive is 1
             string query = @"
                 SELECT UserId, Username, RoleId 
-                FROM UserLogin 
+                FROM Users
                 WHERE RoleId = @RoleId 
-                  AND Username = @Username 
-                  AND PasswordHash = @PasswordHash";
+                  AND (Username = @UsernameOrEmail OR Email = @UsernameOrEmail)
+                  AND PasswordHash = @PasswordHash
+                  AND IsActive = 1";
 
             var parameters = new DynamicParameters();
             parameters.Add("RoleId", loginModel.RoleId);
-            parameters.Add("Username", loginModel.Username);
+            parameters.Add("UsernameOrEmail", loginModel.UsernameOrEmail); // Supports both username and email
             parameters.Add("PasswordHash", hashedPassword);
 
             var user = await _dbGateway.ExeScalarQuery<dynamic>(query, parameters);
 
             if (user == null)
             {
-                // Invalid login attempt
+                // Invalid login attempt or user is inactive
                 return null;
             }
 

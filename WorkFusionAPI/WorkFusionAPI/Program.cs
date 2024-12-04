@@ -4,13 +4,19 @@ using WorkFusionAPI.Services;
 using WorkFusionAPI.Utility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using WorkFusionAPI.Hub;
+using WorkFusionAPI.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IDictionary<string, UserRoomConnection>>(opt =>
+    new Dictionary<string, UserRoomConnection>());
+
 // JWT Configuration
 var key = Encoding.ASCII.GetBytes(builder.Configuration["Jwt:Key"]);
 builder.Services.AddAuthentication(options =>
@@ -33,6 +39,7 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero
     };
 });
+
 // CORS Configuration
 builder.Services.AddCors(options =>
 {
@@ -41,10 +48,12 @@ builder.Services.AddCors(options =>
         {
             builder.WithOrigins("http://localhost:4200") // Allow your Angular app
                    .AllowAnyMethod()
-                   .AllowAnyHeader();
+                   .AllowAnyHeader()
+                 .AllowCredentials(); // Important for SignalR
         });
 });
 
+// Database and services configuration
 string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddSingleton(new DBGateway(connectionString));
 builder.Services.AddScoped<IUserService, UserService>();
@@ -56,11 +65,13 @@ builder.Services.AddScoped<IManagerService, ManagerService>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IClientsProjectRequestsService, ClientsProjectRequestsService>();
+builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
 
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -72,7 +83,19 @@ app.UseHttpsRedirection();
 // Use CORS policy
 app.UseCors("AllowAngularApp");
 
-app.UseAuthorization();
-app.MapControllers();
+// Use routing middleware
+app.UseRouting();
 
+// Use authentication and authorization middleware
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Map SignalR hubs and endpoints
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHub<ChatHub>("/chat");
+    endpoints.MapControllers();
+});
+
+// Run the application
 app.Run();
