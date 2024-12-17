@@ -1,10 +1,10 @@
 ﻿using Dapper;
 using MailKit.Net.Smtp;
 using MimeKit;
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using WorkFusionAPI.Interfaces;
-using WorkFusionAPI.Models;
 using WorkFusionAPI.Utility;
 
 namespace WorkFusionAPI.Services
@@ -13,6 +13,9 @@ namespace WorkFusionAPI.Services
     {
         private readonly DBGateway _dbGateway;
         private readonly IConfiguration _configuration;
+
+        // In-memory OTP store
+        private static readonly ConcurrentDictionary<string, (string OTP, DateTime Expiry)> _otpStore = new();
 
         public ForgotPasswordService(DBGateway dbGateway, IConfiguration configuration)
         {
@@ -36,14 +39,8 @@ namespace WorkFusionAPI.Services
             string otp = GenerateOTP();
             DateTime expiryTime = DateTime.UtcNow.AddMinutes(5); // OTP valid for 5 minutes
 
-            // Save OTP to the database
-            string otpInsertQuery = "INSERT INTO OTPStore (UserId, OTP, ExpiryTime, IsUsed) VALUES (@UserId, @OTP, @ExpiryTime, 0)";
-            parameters = new DynamicParameters();
-            parameters.Add("@UserId", userId);
-            parameters.Add("@OTP", otp);
-            parameters.Add("@ExpiryTime", expiryTime);
-
-            await _dbGateway.ExeQuery(otpInsertQuery, parameters);
+            // Store OTP in memory
+            _otpStore[email] = (otp, expiryTime);
 
             // Send OTP via email
             await SendEmail(email, otp);
@@ -53,37 +50,25 @@ namespace WorkFusionAPI.Services
 
         public async Task<bool> ResetPassword(string email, string otp, string newPassword)
         {
-            // Validate OTP
-            string otpQuery = @"
-                SELECT UserId FROM OTPStore 
-                WHERE OTP = @OTP AND ExpiryTime > @Now AND IsUsed = 0";
-
-            var parameters = new DynamicParameters();
-            parameters.Add("@OTP", otp);
-            parameters.Add("@Now", DateTime.UtcNow);
-
-            var userId = await _dbGateway.ExeScalarQuery<int?>(otpQuery, parameters);
-
-            if (userId == null)
+            // Check if the OTP exists in memory and is valid
+            if (!_otpStore.TryGetValue(email, out var storedOtp) || storedOtp.Expiry < DateTime.UtcNow || storedOtp.OTP != otp)
+            {
                 return false;
+            }
 
             // Hash the new password using SHA512
             string hashedPassword = HashPassword(newPassword);
 
             // Update the password in the Users table
-            string updatePasswordQuery = "UPDATE Users SET PasswordHash = @PasswordHash WHERE UserId = @UserId";
-            parameters = new DynamicParameters();
+            string updatePasswordQuery = "UPDATE Users SET PasswordHash = @PasswordHash WHERE Email = @Email";
+            var parameters = new DynamicParameters();
             parameters.Add("@PasswordHash", hashedPassword);
-            parameters.Add("@UserId", userId);
+            parameters.Add("@Email", email);
 
             await _dbGateway.ExeQuery(updatePasswordQuery, parameters);
 
-            // Mark OTP as used
-            string updateOtpQuery = "UPDATE OTPStore SET IsUsed = 1 WHERE OTP = @OTP";
-            parameters = new DynamicParameters();
-            parameters.Add("@OTP", otp);
-
-            await _dbGateway.ExeQuery(updateOtpQuery, parameters);
+            // Remove the OTP from memory after successful password reset
+            _otpStore.TryRemove(email, out _);
 
             return true;
         }

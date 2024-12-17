@@ -146,6 +146,18 @@ namespace WorkFusionAPI.Services
         }
 
 
+        public async Task<List<EmployeeDto>> GetEmployeesByManagerIdAsync(int managerId)
+        {
+            string query = @"
+                SELECT e.EmployeeId, e.FirstName, e.LastName, e.EmployeeImage 
+                FROM employees e
+                INNER JOIN managers m ON m.DepartmentId = e.DepartmentId
+                WHERE m.ManagerId = @ManagerId;";
 
+            var parameters = new DynamicParameters();
+            parameters.Add("ManagerId", managerId);
+
+            return await _dbGateway.ExeQueryList<EmployeeDto>(query, parameters);
+        }
     }
 }

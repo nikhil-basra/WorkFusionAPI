@@ -21,9 +21,17 @@ namespace WorkFusionAPI.Controllers
         private readonly IEmployeeService _employeeService;
         private readonly IManagerService _managerService;
         private readonly IClientService _clientService;
+        private readonly IImageService _imageService;
 
-
-        public AdminController(IAdminService adminService, IDepartmentService departmentService,IUserService userService,IEmployeeService employeeService, IManagerService managerService, IClientService clientService)
+        public AdminController(
+            IAdminService adminService, 
+            IDepartmentService departmentService,
+            IUserService userService,
+            IEmployeeService employeeService,
+            IManagerService managerService,
+            IClientService clientService,
+            IImageService imageService
+            )
         {
             _adminService = adminService;
             _departmentService = departmentService;
@@ -31,6 +39,7 @@ namespace WorkFusionAPI.Controllers
             _employeeService = employeeService;
             _managerService = managerService;
             _clientService = clientService;
+            _imageService = imageService;
         }
 
 
@@ -337,6 +346,44 @@ namespace WorkFusionAPI.Controllers
             }
 
             return StatusCode(500, "An error occurred while deleting the client.");
+        }
+
+
+        //-----------------------------admins----------------------------------------//
+        [HttpGet("admin/{userId}")]
+        public async Task<IActionResult> GetAdminByUserId(int userId)
+        {
+            var admin = await _adminService.GetAdminByUserIdAsync(userId);
+            if (admin == null) return NotFound();
+            return Ok(admin);
+        }
+
+
+        [HttpPut("admin/{userId}")]
+        public async Task<IActionResult> UpdateAdminByUserId(int userId, [FromBody] AdminModel admin)
+        {
+            if (userId != admin.UserId) return BadRequest("User ID mismatch.");
+
+            var result = await _adminService.UpdateAdminByUserIdAsync(userId, admin);
+
+            if (!result) return BadRequest("Failed to update admin.");
+
+            return Ok(new { message = "Admin updated successfully." });
+        }
+
+        //------------------------------------------------get image ----------------------------------------------//
+
+        [HttpGet("adminImage/{userId}/{roleId}")]
+        public async Task<ActionResult<UserImageModel>> GetImage(int userId, int roleId)
+        {
+            var base64Image = await _imageService.GetImageByUserIdAndRoleIdAsync(userId, roleId);
+
+            if (string.IsNullOrEmpty(base64Image))
+            {
+                return NotFound("Image not found for the given user and role.");
+            }
+
+            return Ok(new UserImageModel { Base64Image = base64Image });
         }
 
     }

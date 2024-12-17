@@ -16,17 +16,17 @@ namespace WorkFusionAPI.Services
             _dbGateway = dbGateway;
         }
 
-        public async Task<IEnumerable<ClientsProjectRequestsModel>> GetAllProjectsAsync()
+        public async Task<IEnumerable<ClientsProjectRequestsModel>> GetAllProjectsRequestsAsync()
         {
             var query = "SELECT * FROM clientsprojectrequests";
             return await _dbGateway.ExeQueryList<ClientsProjectRequestsModel>(query);
         }
 
-        public async Task<ClientsProjectRequestsModel> GetProjectByIdAsync(int projectId)
+        public async Task<ClientsProjectRequestsModel> GetProjectRequestsByIdAsync(int projectRequestId)
         {
-            var query = "SELECT * FROM clientsprojectrequests WHERE ProjectID = @ProjectID";
+            var query = "SELECT * FROM clientsprojectrequests WHERE ProjectRequestID = @ProjectRequestID";
             var parameters = new DynamicParameters();
-            parameters.Add("@ProjectID", projectId);
+            parameters.Add("@ProjectRequestID", projectRequestId);
             return await _dbGateway.ExeScalarQuery<ClientsProjectRequestsModel>(query, parameters);
         }
 
@@ -70,17 +70,40 @@ namespace WorkFusionAPI.Services
                     SpecialInstructions = @SpecialInstructions,
                     ManagerNotes = @ManagerNotes,
                     UpdatedAt = CURRENT_TIMESTAMP
-                WHERE ProjectID = @ProjectID";
+                WHERE ProjectRequestID = @ProjectRequestID";
             var parameters = new DynamicParameters(projectRequest);
             return await _dbGateway.ExeQuery(query, parameters) > 0;
         }
 
-        public async Task<bool> DeleteProjectRequestAsync(int projectId)
+        public async Task<bool> DeleteProjectRequestAsync(int projectRequestId)
         {
-            var query = "DELETE FROM clientsprojectrequests WHERE ProjectID = @ProjectID";
+            var query = "DELETE FROM clientsprojectrequests WHERE ProjectRequestID = @ProjectRequestID";
             var parameters = new DynamicParameters();
-            parameters.Add("@ProjectID", projectId);
+            parameters.Add("@ProjectRequestID", projectRequestId);
             return await _dbGateway.ExeQuery(query, parameters) > 0;
+        }
+
+        public async Task<IEnumerable<ClientsProjectRequestsModel>> GetProjectRequestsByManagerAsync(int managerId)
+        {
+            // Query to fetch project requests by Manager's department
+            var query = @"
+        SELECT * 
+        FROM clientsprojectrequests
+        WHERE ProjectType = (
+            SELECT DepartmentName
+            FROM departments
+            WHERE DepartmentId = (
+                SELECT DepartmentId
+                FROM managers
+                WHERE ManagerId = @ManagerId
+            )
+        )";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@ManagerId", managerId);
+
+            // Assuming _dbGateway.ExeQueryList executes the query and returns the results
+            return await _dbGateway.ExeQueryList<ClientsProjectRequestsModel>(query, parameters);
         }
     }
 }

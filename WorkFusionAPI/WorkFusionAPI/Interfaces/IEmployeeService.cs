@@ -11,5 +11,8 @@ namespace WorkFusionAPI.Interfaces
         Task<bool> CreateEmployeeAsync(EmployeeModel newEmployee);
 
         Task<bool> UpdateEmployeeAsync(EmployeeModel employee);
+
+
+        Task<List<EmployeeDto>> GetEmployeesByManagerIdAsync(int managerId);
     }
 }

@@ -18,14 +18,23 @@ namespace WorkFusionAPI.Controllers
         private readonly IImageService _imageService;
         private readonly IClientService _clientService;
         private readonly IUserService _userService;
+        private readonly IProjectsService _projectsService;
 
-        public ClientController(IClientsProjectRequestsService clientsProjectRequestsService, IUserService userService, IDepartmentService departmentService, IImageService imageService, IClientService clientService)
+        public ClientController(
+            IClientsProjectRequestsService clientsProjectRequestsService,
+            IUserService userService,
+            IDepartmentService departmentService, 
+            IImageService imageService,
+            IClientService clientService,
+            IProjectsService projectsService
+            )
         {
             _clientsProjectRequestsService = clientsProjectRequestsService;
             _departmentService = departmentService;
             _imageService = imageService;
             _clientService = clientService;
             _userService = userService;
+            _projectsService = projectsService;
         }
 
         //-------------------------------client----------------------------------------//
@@ -59,19 +68,21 @@ namespace WorkFusionAPI.Controllers
             return StatusCode(500, "An error occurred while updating the client.");
         }
 
+
+
         //------------------------------ClientsProjectsRequests-----------------------------------------------//
 
         [HttpGet("projectsRequests")]
-        public async Task<ActionResult<IEnumerable<ClientsProjectRequestsModel>>> GetAllProjects()
+        public async Task<ActionResult<IEnumerable<ClientsProjectRequestsModel>>> GetAllProjectsRequests()
         {
-            var projects = await _clientsProjectRequestsService.GetAllProjectsAsync();
+            var projects = await _clientsProjectRequestsService.GetAllProjectsRequestsAsync();
             return Ok(projects);
         }
 
-        [HttpGet("projectsRequests/{projectId}")]
-        public async Task<ActionResult<ClientsProjectRequestsModel>> GetProjectById(int projectId)
+        [HttpGet("projectsRequests/{projectrequestId}")]
+        public async Task<ActionResult<ClientsProjectRequestsModel>> GetProjectRequestsById(int projectrequestId)
         {
-            var project = await _clientsProjectRequestsService.GetProjectByIdAsync(projectId);
+            var project = await _clientsProjectRequestsService.GetProjectRequestsByIdAsync(projectrequestId);
             if (project == null)
             {
                 return NotFound();
@@ -84,15 +95,15 @@ namespace WorkFusionAPI.Controllers
         {
             if (await _clientsProjectRequestsService.AddProjectRequestAsync(projectRequest))
             {
-                return CreatedAtAction(nameof(GetProjectById), new { projectId = projectRequest.ProjectID }, projectRequest);
+                return CreatedAtAction(nameof(GetProjectRequestsById), new { projectrequestId = projectRequest.ProjectRequestID }, projectRequest);
             }
             return BadRequest("Failed to create the project request.");
         }
 
-        [HttpPut("projectsRequests/{projectId}")]
-        public async Task<ActionResult> UpdateProjectRequest(int projectId, [FromBody] ClientsProjectRequestsModel projectRequest)
+        [HttpPut("projectsRequests/{projectrequestId}")]
+        public async Task<ActionResult> UpdateProjectRequest(int projectrequestId, [FromBody] ClientsProjectRequestsModel projectRequest)
         {
-            if (projectId != projectRequest.ProjectID)
+            if (projectrequestId != projectRequest.ProjectRequestID)
             {
                 return BadRequest("Project ID mismatch.");
             }
@@ -104,17 +115,17 @@ namespace WorkFusionAPI.Controllers
             return NotFound();
         }
 
-        [HttpDelete("projectsRequests/{projectId}")]
-        public async Task<ActionResult> DeleteProjectRequest(int projectId)
+        [HttpDelete("projectsRequests/{projectrequestId}")]
+        public async Task<ActionResult> DeleteProjectRequest(int projectrequestId)
         {
-            if (await _clientsProjectRequestsService.DeleteProjectRequestAsync(projectId))
+            if (await _clientsProjectRequestsService.DeleteProjectRequestAsync(projectrequestId))
             {
                 return NoContent();
             }
             return NotFound();
         }
 
-        //------------------------departments---------------------------------------//
+        //-------------------------------------------------------departments---------------------------------------------------//
 
         [HttpGet("departments")]
         public async Task<ActionResult<IEnumerable<DepartmentModel>>> GetDepartments()
@@ -123,7 +134,7 @@ namespace WorkFusionAPI.Controllers
             return Ok(departments);
         }
 
-        //------------------------------------------------get image ----------------------------------------------//
+        //------------------------------------------------get image ------------------------------------------------------
 
         [HttpGet("clientImage/{userId}/{roleId}")]
         public async Task<ActionResult<UserImageModel>> GetImage(int userId, int roleId)
@@ -174,6 +185,18 @@ namespace WorkFusionAPI.Controllers
             }
         }
 
+        //-----------------------projects ---------------------------
+        [HttpGet("projects/{clientId}")]
+        public async Task<ActionResult<IEnumerable<ProjectsModel>>> GetClientProjects(int clientId)
+        {
+            var projects = await _projectsService.GetProjectsByClientIdAsync(clientId);
 
+            if (projects == null || !projects.Any())
+            {
+                return NotFound("No projects found for the client.");
+            }
+
+            return Ok(projects);
+        }
     }
 }

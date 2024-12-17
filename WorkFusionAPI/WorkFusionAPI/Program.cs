@@ -63,7 +63,7 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IManagerService, ManagerService>();
 builder.Services.AddScoped<IClientService, ClientService>();
-builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<IProjectsService, ProjectsService>();
 builder.Services.AddScoped<IClientsProjectRequestsService, ClientsProjectRequestsService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IForgotPasswordService, ForgotPasswordService>();

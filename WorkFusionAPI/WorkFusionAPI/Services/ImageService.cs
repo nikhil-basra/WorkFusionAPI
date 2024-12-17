@@ -22,6 +22,10 @@ namespace WorkFusionAPI.Services
 
             switch (roleId)
             {
+                case 1: // Manager
+                    tableName = "md_admins";
+                    imageColumn = "AdminImage";
+                    break;
                 case 2: // Manager
                     tableName = "managers";
                     imageColumn = "ManagerImage";

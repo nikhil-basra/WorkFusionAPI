@@ -71,6 +71,13 @@ namespace WorkFusionAPI.Services
                     FROM clients
                     WHERE UserId = @UserId AND IsActive = 1";
             }
+            else if (user.RoleId == 1) // admin
+            {
+                roleQuery = @"
+                    SELECT AdminId AS EntityId, CONCAT(FirstName, ' ', LastName) AS Name
+                    FROM md_admins
+                    WHERE UserId = @UserId AND IsActive = 1";
+            }
 
             if (!string.IsNullOrEmpty(roleQuery))
             {

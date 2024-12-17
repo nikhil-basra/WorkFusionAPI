@@ -34,7 +34,7 @@ namespace WorkFusionAPI.Controllers
             {
                 return NotFound(); // Return 404 if employee not found
             }
-            return Ok(employee); // Return employee details if found
+            return Ok(employee); 
         }
 
         [HttpGet("employees/{id}")]
@@ -48,7 +48,7 @@ namespace WorkFusionAPI.Controllers
             return Ok(employee);
         }
 
-        //[HttpPut]
+      
         [HttpPut("updateEmployee")]
         public async Task<IActionResult> UpdateEmployee([FromBody] EmployeeModel employee)
         {
@@ -135,5 +135,6 @@ namespace WorkFusionAPI.Controllers
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
+
     }
 }

@@ -2,7 +2,7 @@
 {
     public class ClientsProjectRequestsModel
     {
-        public int ProjectID { get; set; }
+        public int ProjectRequestID { get; set; }
         public int ClientID { get; set; }
         public string ProjectTitle { get; set; }
         public string ProjectDescription { get; set; }

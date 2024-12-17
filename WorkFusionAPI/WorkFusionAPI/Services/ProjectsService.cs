@@ -1,0 +1,292 @@
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using WorkFusionAPI.Models;
+using WorkFusionAPI.Utility;
+using Dapper;
+using WorkFusionAPI.Interfaces;
+using Microsoft.AspNetCore.Mvc;
+
+namespace WorkFusionAPI.Services
+{
+    public class ProjectsService : IProjectsService
+    {
+        private readonly DBGateway _dbGateway;
+
+        public ProjectsService(DBGateway dbGateway)
+        {
+            _dbGateway = dbGateway;
+        }
+
+        // Get all projects
+        public async Task<IEnumerable<ProjectsModel>> GetAllProjectsAsync()
+        {
+            var query = @"
+        SELECT 
+            p.ProjectId, 
+            p.ProjectName, 
+            p.Description, 
+            p.StartDate, 
+            p.EndDate, 
+            p.Budget, 
+            p.Status, 
+            p.Attachments ,
+            m.FirstName AS ManagerFirstName,
+            m.LastName AS ManagerLastName,
+            m.ManagerId,
+            c.FirstName AS ClientFirstName,
+            c.LastName AS ClientLastName,
+            c.ClientId  
+        FROM 
+            Projects p
+        INNER JOIN 
+            Managers m ON p.ManagerId = m.ManagerId
+        INNER JOIN
+            Clients c ON p.ClientId = c.ClientId";
+
+            // Execute the query and map the result to ProjectsModel
+            return await _dbGateway.ExeQueryList<ProjectsModel>(query);
+        }
+
+
+        // Get projects by manager ID
+        public async Task<IEnumerable<ProjectsModel>> GetProjectsByManagerIdAsync(int managerId)
+        {
+            var query = @"
+        SELECT 
+            p.ProjectId, 
+            p.ProjectName, 
+            p.Description, 
+            p.StartDate, 
+            p.EndDate, 
+            p.Budget, 
+            p.Status, 
+            p.Attachments,
+            p.Milestones ,
+            p.TeamMembers,
+            GROUP_CONCAT(CONCAT(e.FirstName, ' ', e.LastName)) AS TeamMemberNames, -- Get names from employees
+            p.ActualCost,
+            p.IsActive ,
+            m.FirstName AS ManagerFirstName,
+            m.LastName AS ManagerLastName,
+            m.ManagerId,
+            c.FirstName AS ClientFirstName,
+            c.LastName AS ClientLastName,
+            c.ClientId  
+        FROM 
+          Projects p
+         LEFT JOIN 
+            Managers m ON p.ManagerId = m.ManagerId
+        LEFT JOIN
+            Clients c ON p.ClientId = c.ClientId
+LEFT JOIN 
+        employees e ON FIND_IN_SET(e.EmployeeId, p.TeamMembers) > 0 -- Match EmployeeId with TeamMembers
+        WHERE 
+            p.managerId = @managerId
+            GROUP BY
+        p.ProjectId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("managerId", managerId);
+
+            // Execute the query and map the result to ProjectsModel
+            return await _dbGateway.ExeQueryList<ProjectsModel>(query, parameters);
+        }
+
+
+        //Get project by ID
+        // 
+        public async Task<ProjectsModel> GetProjectByIdAsync(int projectId)
+        {
+            var query = @"
+        SELECT 
+            p.*,
+           c.FirstName AS ClientFirstName,
+           c.LastName AS ClientLastName,
+           c.ClientId  
+        FROM 
+            Projects p
+        INNER JOIN 
+            Clients c ON p.ClientId = c.ClientId
+        WHERE 
+            p.ProjectId = @ProjectId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("ProjectId", projectId);
+
+            return await _dbGateway.ExeScalarQuery<ProjectsModel>(query, parameters);
+        }
+
+
+        public async Task<int> CreateProjectAsync(ProjectsModel project)
+        {
+            if (project.CreatedAt == DateTime.MinValue)
+            {
+                project.CreatedAt = DateTime.UtcNow;
+            }
+            if (project.UpdatedAt == DateTime.MinValue)
+            {
+                project.UpdatedAt = DateTime.UtcNow; // Set it to the current time if it's not set
+            }
+
+            // Insert query for Projects table
+            var insertQuery = @"
+        INSERT INTO Projects (ProjectName, Description, StartDate, EndDate, Budget, Status, ManagerId, ClientId, CreatedAt, UpdatedAt, Deadline, ActualCost, Attachments, Milestones, TeamMembers, IsActive)
+        VALUES (@ProjectName, @Description, @StartDate, @EndDate, @Budget, @Status, @ManagerId, @ClientId, @CreatedAt, @UpdatedAt, @Deadline, @ActualCost, @Attachments, @Milestones, @TeamMembers, @IsActive);
+        SELECT LAST_INSERT_ID();";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("ProjectName", project.ProjectName);
+            parameters.Add("Description", project.Description);
+            parameters.Add("StartDate", project.StartDate);
+            parameters.Add("EndDate", project.EndDate);
+            parameters.Add("Budget", project.Budget);
+            parameters.Add("Status", project.Status);
+            parameters.Add("ManagerId", project.ManagerId);
+            parameters.Add("ClientId", project.ClientId);
+            parameters.Add("CreatedAt", project.CreatedAt);
+            parameters.Add("UpdatedAt", project.UpdatedAt);
+            parameters.Add("Deadline", project.Deadline);
+            parameters.Add("ActualCost", project.ActualCost);
+            parameters.Add("Attachments", project.Attachments);
+            parameters.Add("Milestones", project.Milestones);
+            parameters.Add("TeamMembers", project.TeamMembers);
+            parameters.Add("IsActive", project.IsActive);
+
+            // Execute the insert query
+            var projectId = await _dbGateway.ExeQuery(insertQuery, parameters);
+
+            // Update IsActive in the clientsprojectrequests table
+            var updateQuery = @"
+        UPDATE clientsprojectrequests
+        SET IsActive = 1
+        WHERE ProjectTitle = @ProjectName AND ClientID = @ClientId";
+
+            var updateParameters = new DynamicParameters();
+            updateParameters.Add("ProjectName", project.ProjectName);
+            updateParameters.Add("ClientId", project.ClientId);
+
+            await _dbGateway.ExeQuery(updateQuery, updateParameters);
+
+            return projectId;
+        }
+
+        // update project
+        public async Task<int> UpdateProjectAsync(ProjectsModel project)
+        {
+            // Ensure UpdatedAt has a valid value
+            if (project.UpdatedAt == DateTime.MinValue)
+            {
+                project.UpdatedAt = DateTime.UtcNow; // Set it to the current time if it's not set
+            }
+
+            var updateQuery = @"
+    UPDATE projects
+    SET ProjectName = @ProjectName,
+        Description = @Description,
+        StartDate = @StartDate,
+        EndDate = @EndDate,
+        Budget = @Budget,
+        Status = @Status,
+        ManagerId = @ManagerId,
+        ClientId = @ClientId,
+        UpdatedAt = @UpdatedAt,
+        Deadline = @Deadline,
+        ActualCost = @ActualCost,
+        Attachments = @Attachments,
+        Milestones = @Milestones,
+        IsActive = @IsActive
+        -- Only update TeamMembers if a non-null value is passed
+        {0}
+    WHERE ProjectId = @ProjectId";
+
+            // Build the query dynamically based on TeamMembers
+            string teamMembersUpdate = string.Empty;
+            var parameters = new DynamicParameters();
+
+            if (!string.IsNullOrEmpty(project.TeamMembers))
+            {
+                teamMembersUpdate = ", TeamMembers = @TeamMembers";
+                parameters.Add("TeamMembers", project.TeamMembers);
+            }
+
+            // Add other parameters
+            parameters.Add("ProjectId", project.ProjectId);
+            parameters.Add("ProjectName", project.ProjectName);
+            parameters.Add("Description", project.Description);
+            parameters.Add("StartDate", project.StartDate);
+            parameters.Add("EndDate", project.EndDate);
+            parameters.Add("Budget", project.Budget);
+            parameters.Add("Status", project.Status);
+            parameters.Add("ManagerId", project.ManagerId);
+            parameters.Add("ClientId", project.ClientId);
+            parameters.Add("UpdatedAt", project.UpdatedAt);
+            parameters.Add("Deadline", project.Deadline);
+            parameters.Add("ActualCost", project.ActualCost);
+            parameters.Add("Attachments", project.Attachments);
+            parameters.Add("Milestones", project.Milestones);
+            parameters.Add("IsActive", project.IsActive);
+
+            // Combine the query with the optional TeamMembers update
+            string finalQuery = string.Format(updateQuery, teamMembersUpdate);
+
+            return await _dbGateway.ExecuteAsync(finalQuery, parameters);
+        }
+
+
+        // Delete a project
+        public async Task<int> DeleteProjectAsync(int projectId)
+        {
+            var deleteQuery = "DELETE FROM Projects WHERE ProjectId = @ProjectId";
+            var parameters = new DynamicParameters();
+            parameters.Add("ProjectId", projectId);
+
+            return await _dbGateway.ExecuteAsync(deleteQuery, parameters);
+        }
+
+
+
+        //-------------get project by client id ------------------------//
+
+                    public async Task<IEnumerable<ProjectsModel>> GetProjectsByClientIdAsync(int clientId)
+                    {
+                        var query = @"
+            SELECT 
+                p.ProjectId, 
+                p.ProjectName, 
+                p.Description, 
+                p.StartDate, 
+                p.EndDate, 
+                p.Budget, 
+                p.Status, 
+                p.Attachments, 
+                p.Milestones, 
+                p.TeamMembers, -- Store the IDs as is
+                GROUP_CONCAT(CONCAT(e.FirstName, ' ', e.LastName)) AS TeamMemberNames, -- Get names from employees
+                p.ActualCost, 
+                p.IsActive, 
+                p.ManagerId, 
+                p.ClientId, 
+                p.CreatedAt, 
+                p.UpdatedAt, 
+                m.FirstName AS ManagerFirstName, 
+                m.LastName AS ManagerLastName
+            FROM 
+                Projects p
+            LEFT JOIN 
+                Managers m ON p.ManagerId = m.ManagerId
+            LEFT JOIN 
+                employees e ON FIND_IN_SET(e.EmployeeId, p.TeamMembers) > 0 -- Match EmployeeId with TeamMembers
+            WHERE 
+                p.ClientId = @clientId
+            GROUP BY 
+                p.ProjectId";
+
+                        var parameters = new DynamicParameters();
+                        parameters.Add("clientId", clientId);
+
+                        return await _dbGateway.ExeQueryList<ProjectsModel>(query, parameters);
+                    }
+
+
+    }
+}

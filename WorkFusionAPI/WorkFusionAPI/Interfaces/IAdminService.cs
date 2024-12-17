@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using WorkFusionAPI.Models;
+﻿using WorkFusionAPI.Models;
 
 namespace WorkFusionAPI.Interfaces
 {
     public interface IAdminService
     {
-        
+        Task<AdminModel> GetAdminByUserIdAsync(int userId);
+        Task<bool> UpdateAdminByUserIdAsync(int userId, AdminModel admin);
+    
     }
 }
