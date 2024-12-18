@@ -297,6 +297,17 @@ namespace WorkFusionAPI.Utility
         //{
         //    return await _connection.ExecuteAsync(query, parameters);
         //}
+        public async Task<IEnumerable<T>> QueryAsync<T>(string query, DynamicParameters parameters)
+        {
+            using (var connection = Connection())
+            {
+                if (connection.State == ConnectionState.Closed)
+                {
+                    connection.Open();
+                }
+                return await connection.QueryAsync<T>(query, parameters);
+            }
+        }
 
 
 

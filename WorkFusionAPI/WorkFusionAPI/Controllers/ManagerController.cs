@@ -19,6 +19,7 @@ namespace WorkFusionAPI.Controllers
         private readonly IClientsProjectRequestsService _clientsProjectRequestsService;
         private readonly IClientService _clientService;
         private readonly IEmployeeService _employeeService;
+        private readonly ITaskService _taskService;
 
         public ManagerController(
             IImageService imageService,
@@ -27,7 +28,8 @@ namespace WorkFusionAPI.Controllers
             IProjectsService projectsService,
             IClientsProjectRequestsService clientsProjectRequestsService,
              IClientService clientService,
-             IEmployeeService employeeService
+             IEmployeeService employeeService,
+             ITaskService taskService
             )
         {
             _imageService = imageService;
@@ -37,7 +39,7 @@ namespace WorkFusionAPI.Controllers
             _clientsProjectRequestsService = clientsProjectRequestsService;
             _clientService = clientService;
             _employeeService = employeeService;
-
+            _taskService = taskService;
         }
 
         //-------------------------------------------------employee--------------------------------
@@ -54,6 +56,19 @@ namespace WorkFusionAPI.Controllers
                 return StatusCode(500, new { Message = "An error occurred.", Details = ex.Message });
             }
         }
+
+
+        [HttpGet("employees/{id}")]
+        public async Task<ActionResult<EmployeeModel>> GetEmployeeById(int id)
+        {
+            var employee = await _employeeService.GetEmployeeByIdAsync(id);
+            if (employee == null)
+            {
+                return NotFound();
+            }
+            return Ok(employee);
+        }
+
 
         //--------------------get image --------------------------//
         [HttpGet("managerImage/{userId}/{roleId}")]
@@ -290,6 +305,98 @@ namespace WorkFusionAPI.Controllers
                 return NotFound();
             }
             return Ok(client);
+        }
+
+        //-------------------------------tasks--------------------------------------//
+
+        [HttpPost("addtask")]
+        public async Task<IActionResult> CreateTask([FromBody] TaskModel task)
+        {
+            try
+            {
+                var result = await _taskService.CreateTask(task);
+                return Ok(new { success = result > 0 });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("getTaskbyManagerId/{managerId}")]
+        public async Task<IActionResult> GetTaskByManagerId(int managerId)
+        {
+            try
+            {
+                var tasks = await _taskService.GetTaskByManagerId(managerId);
+                if (tasks == null || !tasks.Any())
+                    return NotFound("No tasks found for the given managerId.");
+
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpGet("getAllTasks")]
+        public async Task<IActionResult> GetAllTasks()
+        {
+            try
+            {
+                var tasks = await _taskService.GetAllTasks();
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpGet("getTaskbyId/{taskId}")]
+        public async Task<IActionResult> GetTaskById(int taskId)
+        {
+            try
+            {
+                var task = await _taskService.GetTaskById(taskId);
+                if (task == null) return NotFound();
+                return Ok(task);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("updateTasks")]
+        public async Task<IActionResult> UpdateTask([FromBody] TaskModel task)
+        {
+            try
+            {
+                var result = await _taskService.UpdateTask(task);
+                return Ok(new { success = result > 0 });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpDelete("deleteTasks/{taskId}")]
+        public async Task<IActionResult> DeleteTask(int taskId)
+        {
+            try
+            {
+                var result = await _taskService.DeleteTask(taskId);
+                return Ok(new { success = result > 0 });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
     }
