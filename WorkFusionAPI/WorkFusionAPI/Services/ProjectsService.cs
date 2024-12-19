@@ -288,5 +288,48 @@ LEFT JOIN
                     }
 
 
+
+        // Get projects by employee ID (looking for employee ID in the TeamMembers column)
+        public async Task<IEnumerable<ProjectsModel>> GetProjectsByEmployeeIdAsync(int employeeId)
+        {
+            var query = @"
+                SELECT 
+                    p.ProjectId, 
+                    p.ProjectName, 
+                    p.Description, 
+                    p.StartDate, 
+                    p.EndDate, 
+                    p.Budget, 
+                    p.Status, 
+                    p.Attachments, 
+                    p.Milestones,
+                    p.TeamMembers,
+                    GROUP_CONCAT(CONCAT(e.FirstName, ' ', e.LastName)) AS TeamMemberNames, 
+                    p.ActualCost, 
+                    p.IsActive,
+                    m.FirstName AS ManagerFirstName, 
+                    m.LastName AS ManagerLastName,
+                    c.FirstName AS ClientFirstName, 
+                    c.LastName AS ClientLastName
+                FROM 
+                    Projects p
+                LEFT JOIN 
+                    Managers m ON p.ManagerId = m.ManagerId
+                LEFT JOIN 
+                    Clients c ON p.ClientId = c.ClientId
+                LEFT JOIN 
+                    employees e ON FIND_IN_SET(e.EmployeeId, p.TeamMembers) > 0 -- Match EmployeeId with TeamMembers
+                WHERE 
+                    FIND_IN_SET(@employeeId, p.TeamMembers) > 0
+                GROUP BY 
+                    p.ProjectId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("employeeId", employeeId);
+
+            // Execute the query and return the results
+            return await _dbGateway.ExeQueryList<ProjectsModel>(query, parameters);
+        }
+
     }
 }

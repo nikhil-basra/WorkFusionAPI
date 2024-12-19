@@ -60,6 +60,44 @@ namespace WorkFusionAPI.Services
             return await _dbGateway.QueryAsync<TaskModel>(query, parameters);
         }
 
+        public async Task<IEnumerable<TaskModel>> GetTaskByEmployeeId(int employeeId)
+        {
+            var query = @"
+        SELECT 
+            t.TaskId, 
+            t.TaskName, 
+            t.Description, 
+            t.AssignedTo, 
+            t.AssignedBy, 
+            t.ProjectId, 
+            t.Priority, 
+            t.Status, 
+            t.StartDate, 
+            t.DueDate, 
+            t.EndDate, 
+            t.CreatedAt, 
+            t.UpdatedAt, 
+            t.IsActive,
+            CONCAT(e.FirstName, ' ', e.LastName) AS EmployeeName,
+            p.ProjectName
+        FROM 
+            tasks t
+        JOIN 
+            employees e ON t.AssignedTo = e.EmployeeId
+        JOIN 
+            projects p ON t.ProjectId = p.ProjectId
+        WHERE 
+            t.AssignedTo = @AssignedTo
+            AND t.IsActive = 1
+            AND e.IsActive = 1
+            AND p.IsActive = 1;
+    ";
+
+            var parameters = new DynamicParameters(new { AssignedTo = employeeId });
+
+            return await _dbGateway.QueryAsync<TaskModel>(query, parameters);
+        }
+
 
         public async Task<List<TaskModel>> GetAllTasks()
         {
@@ -69,8 +107,39 @@ namespace WorkFusionAPI.Services
 
         public async Task<TaskModel> GetTaskById(int taskId)
         {
-            var query = "SELECT * FROM tasks WHERE TaskId = @TaskId AND IsActive = 1;";
+            var query = @"
+    SELECT 
+        t.TaskId, 
+        t.TaskName, 
+        t.Description, 
+        t.AssignedTo, 
+        t.AssignedBy, 
+        t.ProjectId, 
+        t.Priority, 
+        t.Status, 
+        t.StartDate, 
+        t.DueDate, 
+        t.EndDate, 
+        t.CreatedAt, 
+        t.UpdatedAt, 
+        t.IsActive,
+        CONCAT(e.FirstName, ' ', e.LastName) AS EmployeeName,
+        p.ProjectName
+    FROM 
+        tasks t
+    JOIN 
+        employees e ON t.AssignedTo = e.EmployeeId
+    JOIN 
+        projects p ON t.ProjectId = p.ProjectId
+    WHERE 
+        t.TaskId = @TaskId 
+        AND t.IsActive = 1
+        AND e.IsActive = 1
+        AND p.IsActive = 1;
+    ";
+
             var parameters = new DynamicParameters(new { TaskId = taskId });
+
             return await _dbGateway.ExeScalarQuery<TaskModel>(query, parameters);
         }
 
@@ -93,6 +162,18 @@ namespace WorkFusionAPI.Services
             var parameters = new DynamicParameters(task);
             return await _dbGateway.ExeQuery(query, parameters);
         }
+
+        public async Task<int> UpdateTaskStatus(TaskStatusModel task)
+        {
+            var query = @"UPDATE tasks SET
+                          Status = @Status,
+                          StartDate = @StartDate,
+                          EndDate = @EndDate
+                          WHERE TaskId = @TaskId;";
+            var parameters = new DynamicParameters(task);
+            return await _dbGateway.ExeQuery(query, parameters);
+        }
+
 
         public async Task<int> DeleteTask(int taskId)
         {

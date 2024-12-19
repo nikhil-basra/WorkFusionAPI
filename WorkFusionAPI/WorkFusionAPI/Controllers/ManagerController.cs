@@ -340,6 +340,8 @@ namespace WorkFusionAPI.Controllers
             }
         }
 
+ 
+
 
         [HttpGet("getAllTasks")]
         public async Task<IActionResult> GetAllTasks()
@@ -362,7 +364,9 @@ namespace WorkFusionAPI.Controllers
             try
             {
                 var task = await _taskService.GetTaskById(taskId);
-                if (task == null) return NotFound();
+                if (task == null)
+                    return NotFound("Task not found for the given taskId.");
+
                 return Ok(task);
             }
             catch (Exception ex)
@@ -370,6 +374,7 @@ namespace WorkFusionAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
 
         [HttpPut("updateTasks")]
         public async Task<IActionResult> UpdateTask([FromBody] TaskModel task)
@@ -384,6 +389,8 @@ namespace WorkFusionAPI.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+
 
         [HttpDelete("deleteTasks/{taskId}")]
         public async Task<IActionResult> DeleteTask(int taskId)

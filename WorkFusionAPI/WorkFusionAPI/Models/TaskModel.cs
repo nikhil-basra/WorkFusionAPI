@@ -21,4 +21,13 @@
         public string? EmployeeName { get; set; }
         public string? ProjectName { get; set; }
     }
+
+    public class TaskStatusModel
+    {
+        public int TaskId { get; set; }
+        public string Status { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+
+    }
 }

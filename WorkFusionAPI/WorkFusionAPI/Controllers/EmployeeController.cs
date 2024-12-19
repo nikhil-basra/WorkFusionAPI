@@ -15,13 +15,23 @@ namespace WorkFusionAPI.Controllers
         private readonly IImageService _imageService;
         private readonly IDepartmentService _departmentService;
         private readonly IUserService _userService;
+        private readonly ITaskService _taskService;
+        private readonly IProjectsService _projectsService;
 
-        public EmployeeController(IEmployeeService employeeService, IImageService imageService, IDepartmentService departmentService, IUserService userService)
+        public EmployeeController(
+            IEmployeeService employeeService,
+            IImageService imageService,
+            IDepartmentService departmentService,
+            IUserService userService,
+            ITaskService taskService,
+            IProjectsService projectsService)
         {
             _employeeService = employeeService;
             _imageService = imageService;
             _departmentService = departmentService;
-            _userService = userService; 
+            _userService = userService;
+            _taskService = taskService;
+            _projectsService = projectsService;
         }
 
         //-------------------------------------employee--------------------------------//
@@ -134,6 +144,71 @@ namespace WorkFusionAPI.Controllers
             {
                 return StatusCode(500, $"An error occurred: {ex.Message}");
             }
+        }
+
+
+        //------------------tasks---------------------------------------------//
+        [HttpGet("getTaskbyEmployeeId/{employeeId}")]
+        public async Task<IActionResult> GetTaskByEmployeeId(int employeeId)
+        {
+            try
+            {
+                var tasks = await _taskService.GetTaskByEmployeeId(employeeId);
+                if (tasks == null || !tasks.Any())
+                    return NotFound("No tasks found for the given managerId.");
+
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPut("updateTasksStatus")]
+        public async Task<IActionResult> UpdateTaskStatus([FromBody] TaskStatusModel task)
+        {
+            try
+            {
+                var result = await _taskService.UpdateTaskStatus(task);
+                return Ok(new { success = result > 0 });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpGet("getTaskbyId/{taskId}")]
+        public async Task<IActionResult> GetTaskById(int taskId)
+        {
+            try
+            {
+                var task = await _taskService.GetTaskById(taskId);
+                if (task == null)
+                    return NotFound("Task not found for the given taskId.");
+
+                return Ok(task);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        //----------------projects-----------------------
+
+        // Get projects by employee ID
+        [HttpGet("GetProjectsByEmployeeId/{employeeId}")]
+        public async Task<IActionResult> GetProjectsByEmployeeId(int employeeId)
+        {
+            var projects = await _projectsService.GetProjectsByEmployeeIdAsync(employeeId);
+
+            if (projects == null || !projects.Any())
+                return NotFound("No projects found for this employee.");
+
+            return Ok(projects);
         }
 
     }

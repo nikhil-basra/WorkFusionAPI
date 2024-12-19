@@ -12,8 +12,8 @@ namespace WorkFusionAPI.Interfaces
         Task<int> UpdateProjectAsync(ProjectsModel project);
         Task<int> DeleteProjectAsync(int projectId);
         Task<IEnumerable<ProjectsModel>> GetProjectsByManagerIdAsync(int managerId);
-
         Task<IEnumerable<ProjectsModel>> GetProjectsByClientIdAsync(int clientId);
+        Task<IEnumerable<ProjectsModel>> GetProjectsByEmployeeIdAsync(int employeeId); 
 
     }
 
