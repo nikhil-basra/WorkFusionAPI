@@ -26,4 +26,13 @@
         public Boolean IsActive { get; set; }
 
     }
+
+    public class ProjectStatusCountsModel
+    {
+        public int TotalProjects { get; set; }
+        public int InProgressProjects { get; set; }
+        public int CompletedProjects { get; set; }
+        public int OnHoldProjects { get; set; }
+    }
+
 }

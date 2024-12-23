@@ -310,6 +310,25 @@ namespace WorkFusionAPI.Utility
         }
 
 
+        public async Task<T> ExeQuerySingle<T>(string QueryText, DynamicParameters paras)
+        {
+            try
+            {
+                using IDbConnection conn = Connection();
+                if (conn.State == ConnectionState.Closed)
+                {
+                    conn.Open();
+                }
+
+                return await SqlMapper.QuerySingleOrDefaultAsync<T>(conn, QueryText, paras);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
 
 
     }

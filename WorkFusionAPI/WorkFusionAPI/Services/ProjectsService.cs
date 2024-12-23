@@ -331,5 +331,24 @@ LEFT JOIN
             return await _dbGateway.ExeQueryList<ProjectsModel>(query, parameters);
         }
 
+
+
+        public async Task<ProjectStatusCountsModel> GetProjectStatusCountsByManagerIdAsync(int managerId)
+        {
+            var query = @"
+        SELECT 
+            COUNT(*) AS TotalProjects,
+            SUM(CASE WHEN p.Status = 'InProgress' THEN 1 ELSE 0 END) AS InProgressProjects,
+            SUM(CASE WHEN p.Status = 'Completed' THEN 1 ELSE 0 END) AS CompletedProjects,
+            SUM(CASE WHEN p.Status = 'OnHold' THEN 1 ELSE 0 END) AS OnHoldProjects
+        FROM Projects p
+        WHERE p.ManagerId = @managerId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("managerId", managerId);
+
+            return await _dbGateway.ExeQuerySingle<ProjectStatusCountsModel>(query, parameters);
+        }
+
     }
 }

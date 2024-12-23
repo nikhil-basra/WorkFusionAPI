@@ -294,6 +294,19 @@ namespace WorkFusionAPI.Controllers
             return NoContent();
         }
 
+
+        [HttpGet("manager/{managerId}/project-status-counts")]
+        public async Task<IActionResult> GetProjectStatusCounts(int managerId)
+        {
+            var counts = await _projectsService.GetProjectStatusCountsByManagerIdAsync(managerId);
+
+            if (counts == null)
+                return NotFound("No project data found for this manager.");
+
+            return Ok(counts);
+        }
+
+
         //------------------------------------clients--------------------------------------------//
 
         [HttpGet("clients/{id}")]
