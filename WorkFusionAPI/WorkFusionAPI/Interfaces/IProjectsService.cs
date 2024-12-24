@@ -15,7 +15,16 @@ namespace WorkFusionAPI.Interfaces
         Task<IEnumerable<ProjectsModel>> GetProjectsByClientIdAsync(int clientId);
         Task<IEnumerable<ProjectsModel>> GetProjectsByEmployeeIdAsync(int employeeId);
 
+
+        //----------------counts for graphs--------------------------
         Task<ProjectStatusCountsModel> GetProjectStatusCountsByManagerIdAsync(int managerId);
+       
+        Task<ProjectStatusCountsModel> GetProjectStatusCountsAsync();
+
+
+        Task<List<DepartmentProjectStatusCountsModel>> GetDepartmentProjectStatusCountsAsync();
+
+
 
 
     }

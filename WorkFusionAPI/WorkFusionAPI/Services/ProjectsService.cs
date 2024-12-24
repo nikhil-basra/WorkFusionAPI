@@ -21,31 +21,37 @@ namespace WorkFusionAPI.Services
         public async Task<IEnumerable<ProjectsModel>> GetAllProjectsAsync()
         {
             var query = @"
-        SELECT 
-            p.ProjectId, 
-            p.ProjectName, 
-            p.Description, 
-            p.StartDate, 
-            p.EndDate, 
-            p.Budget, 
-            p.Status, 
-            p.Attachments ,
-            m.FirstName AS ManagerFirstName,
-            m.LastName AS ManagerLastName,
-            m.ManagerId,
-            c.FirstName AS ClientFirstName,
-            c.LastName AS ClientLastName,
-            c.ClientId  
-        FROM 
-            Projects p
-        INNER JOIN 
-            Managers m ON p.ManagerId = m.ManagerId
-        INNER JOIN
-            Clients c ON p.ClientId = c.ClientId";
+    SELECT 
+        p.ProjectId, 
+        p.ProjectName, 
+        p.Description, 
+        p.StartDate, 
+        p.EndDate, 
+        p.Budget, 
+        p.Status, 
+        p.Attachments,
+        GROUP_CONCAT(CONCAT(e.FirstName, ' ', e.LastName)) AS TeamMemberNames, -- Get employee names
+        m.FirstName AS ManagerFirstName,
+        m.LastName AS ManagerLastName,
+        m.ManagerId,
+        c.FirstName AS ClientFirstName,
+        c.LastName AS ClientLastName,
+        c.ClientId  
+    FROM 
+        Projects p
+    INNER JOIN 
+        Managers m ON p.ManagerId = m.ManagerId
+    INNER JOIN
+        Clients c ON p.ClientId = c.ClientId
+    LEFT JOIN 
+        employees e ON FIND_IN_SET(e.EmployeeId, p.TeamMembers) > 0 -- Match EmployeeId with TeamMembers
+    GROUP BY
+        p.ProjectId";
 
             // Execute the query and map the result to ProjectsModel
             return await _dbGateway.ExeQueryList<ProjectsModel>(query);
         }
+
 
 
         // Get projects by manager ID
@@ -333,6 +339,8 @@ LEFT JOIN
 
 
 
+        //-------------------------------for graphs------------------------
+
         public async Task<ProjectStatusCountsModel> GetProjectStatusCountsByManagerIdAsync(int managerId)
         {
             var query = @"
@@ -349,6 +357,42 @@ LEFT JOIN
 
             return await _dbGateway.ExeQuerySingle<ProjectStatusCountsModel>(query, parameters);
         }
+
+        public async Task<ProjectStatusCountsModel> GetProjectStatusCountsAsync()
+        {
+            var query = @"SELECT 
+                   COUNT(*) AS TotalProjects,
+                   SUM(CASE WHEN Status = 'InProgress' THEN 1 ELSE 0 END) AS InProgressProjects,
+                   SUM(CASE WHEN Status = 'Completed' THEN 1 ELSE 0 END) AS CompletedProjects,
+                   SUM(CASE WHEN Status = 'OnHold' THEN 1 ELSE 0 END) AS OnHoldProjects
+               FROM projects
+               WHERE IsActive = 1;";
+
+            // Pass null for parameters since no parameters are needed in this query
+            var result = await _dbGateway.QueryFirstOrDefaultAsync<ProjectStatusCountsModel>(query, null);
+            return result ?? new ProjectStatusCountsModel();
+        }
+
+
+        public async Task<List<DepartmentProjectStatusCountsModel>> GetDepartmentProjectStatusCountsAsync()
+        {
+            var query = @"
+            SELECT 
+                d.DepartmentName,
+                COUNT(p.ProjectId) AS TotalProjects,
+                SUM(CASE WHEN p.Status = 'InProgress' THEN 1 ELSE 0 END) AS InProgressProjects,
+                SUM(CASE WHEN p.Status = 'Completed' THEN 1 ELSE 0 END) AS CompletedProjects,
+                SUM(CASE WHEN p.Status = 'OnHold' THEN 1 ELSE 0 END) AS OnHoldProjects
+            FROM projects p
+            INNER JOIN managers m ON p.ManagerId = m.ManagerId
+            INNER JOIN departments d ON m.DepartmentId = d.DepartmentId
+            WHERE p.IsActive = 1
+            GROUP BY d.DepartmentName";
+
+            var result = await _dbGateway.QueryAsync<DepartmentProjectStatusCountsModel>(query, null);
+            return result.ToList();
+        }
+
 
     }
 }

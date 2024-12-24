@@ -331,6 +331,28 @@ namespace WorkFusionAPI.Utility
 
 
 
+        public async Task<T> QueryFirstOrDefaultAsync<T>(string query, DynamicParameters parameters)
+        {
+            try
+            {
+                using (IDbConnection conn = Connection())
+                {
+                    if (conn.State == ConnectionState.Closed)
+                    {
+                        conn.Open();
+                    }
+
+                    return await SqlMapper.QueryFirstOrDefaultAsync<T>(conn, query, parameters);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
+
     }
 
 }

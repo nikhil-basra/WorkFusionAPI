@@ -52,5 +52,21 @@ namespace WorkFusionAPI.Services
             return await _dbGateway.ExeQuery(query, parameters) > 0;
         }
 
+        public async Task<List<DepartmentEmployeeCountModel>> GetActiveEmployeeCountsAsync()
+        {
+            string query = @"
+                SELECT 
+                    d.DepartmentName, 
+                    COUNT(e.EmployeeId) AS ActiveEmployeeCount
+                FROM 
+                    departments d
+                LEFT JOIN 
+                    employees e ON d.DepartmentId = e.DepartmentId AND e.IsActive = 1
+                GROUP BY 
+                    d.DepartmentId, d.DepartmentName;";
+
+            return await _dbGateway.ExeQueryList<DepartmentEmployeeCountModel>(query);
+        }
+
     }
 }

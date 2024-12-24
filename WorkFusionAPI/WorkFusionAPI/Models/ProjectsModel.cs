@@ -35,4 +35,14 @@
         public int OnHoldProjects { get; set; }
     }
 
+    public class DepartmentProjectStatusCountsModel
+    {
+        public string DepartmentName { get; set; }
+        public int TotalProjects { get; set; }
+        public int InProgressProjects { get; set; }
+        public int CompletedProjects { get; set; }
+        public int OnHoldProjects { get; set; }
+    }
+
+
 }

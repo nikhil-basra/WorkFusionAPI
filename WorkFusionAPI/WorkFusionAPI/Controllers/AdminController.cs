@@ -22,6 +22,7 @@ namespace WorkFusionAPI.Controllers
         private readonly IManagerService _managerService;
         private readonly IClientService _clientService;
         private readonly IImageService _imageService;
+        private readonly IProjectsService _projectsService;
 
         public AdminController(
             IAdminService adminService, 
@@ -30,16 +31,17 @@ namespace WorkFusionAPI.Controllers
             IEmployeeService employeeService,
             IManagerService managerService,
             IClientService clientService,
-            IImageService imageService
-            )
+            IImageService imageService,
+            IProjectsService projectsService)
         {
             _adminService = adminService;
             _departmentService = departmentService;
-            _userService= userService;
+            _userService = userService;
             _employeeService = employeeService;
             _managerService = managerService;
             _clientService = clientService;
             _imageService = imageService;
+            _projectsService = projectsService;
         }
 
 
@@ -384,6 +386,47 @@ namespace WorkFusionAPI.Controllers
             }
 
             return Ok(new UserImageModel { Base64Image = base64Image });
+        }
+
+        //----------------------------------projects------------------------------------------
+
+        [HttpGet("projects")]
+        public async Task<ActionResult<List<ProjectsModel>>> GetAllProjects()
+        {
+            var projects = await _projectsService.GetAllProjectsAsync();
+            return Ok(projects);
+        }
+
+
+
+        //------------------------------graphs-------------------------------------------
+
+        [HttpGet("All-projects-status-counts")]
+        public async Task<IActionResult> GetProjectStatusCounts()
+        {
+            try
+            {
+                var counts = await _projectsService.GetProjectStatusCountsAsync();
+                return Ok(counts);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while fetching project status counts.", Details = ex.Message });
+            }
+        }
+
+        [HttpGet("department-project-status-counts")]
+        public async Task<IActionResult> GetDepartmentProjectStatusCounts()
+        {
+            var result = await _projectsService.GetDepartmentProjectStatusCountsAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("active-employee-counts")]
+        public async Task<IActionResult> GetActiveEmployeeCounts()
+        {
+            var result = await _departmentService.GetActiveEmployeeCountsAsync();
+            return Ok(result);
         }
 
     }

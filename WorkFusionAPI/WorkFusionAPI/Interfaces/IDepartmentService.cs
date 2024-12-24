@@ -10,5 +10,6 @@ namespace WorkFusionAPI.Interfaces
         Task<DepartmentModel> GetDepartmentByIdAsync(int departmentId);
         Task<bool> AddDepartmentAsync(DepartmentModel department);
         Task<bool> UpdateDepartmentAsync(DepartmentModel department);
+        Task<List<DepartmentEmployeeCountModel>> GetActiveEmployeeCountsAsync();
     }
 }
