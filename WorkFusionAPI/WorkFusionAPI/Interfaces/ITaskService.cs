@@ -15,5 +15,8 @@ namespace WorkFusionAPI.Interfaces
         Task<int> UpdateTask(TaskModel task);
         Task<int> UpdateTaskStatus(TaskStatusModel task);
         Task<int> DeleteTask(int taskId);
+
+
+        Task<TaskStatusCount> GetTaskCountsAsync(int employeeId);
     }
 }

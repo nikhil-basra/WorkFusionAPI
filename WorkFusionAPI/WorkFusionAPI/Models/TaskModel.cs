@@ -30,4 +30,13 @@
         public DateTime? EndDate { get; set; }
 
     }
+
+    public class TaskStatusCount
+    {
+        public int Pending { get; set; }
+        public int Completed { get; set; }
+        public int WorkingOnIt { get; set; }
+        public int Total { get; set; }
+    }
+
 }

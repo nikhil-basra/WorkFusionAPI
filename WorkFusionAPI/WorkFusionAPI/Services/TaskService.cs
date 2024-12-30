@@ -181,5 +181,26 @@ namespace WorkFusionAPI.Services
             var parameters = new DynamicParameters(new { TaskId = taskId });
             return await _dbGateway.ExeQuery(query, parameters);
         }
+
+
+
+        public async Task<TaskStatusCount> GetTaskCountsAsync(int employeeId)
+        {
+            var query = @"
+            SELECT
+                SUM(CASE WHEN Status = 'Pending' THEN 1 ELSE 0 END) AS Pending,
+                SUM(CASE WHEN Status = 'Completed' THEN 1 ELSE 0 END) AS Completed,
+                SUM(CASE WHEN Status = 'Working On It' THEN 1 ELSE 0 END) AS WorkingOnIt,
+                COUNT(*) AS Total
+            FROM tasks
+            WHERE AssignedTo = @EmployeeId";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("EmployeeId", employeeId);
+
+            return await _dbGateway.ExeQuerySingle<TaskStatusCount>(query, parameters);
+        }
+
+
     }
 }

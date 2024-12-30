@@ -29,6 +29,15 @@ namespace WorkFusionAPI.Services
             admin.UpdatedAt = DateTime.Now;
 
             var query = @"
+
+             -- Update User table FullName and Email based on the previous email
+        UPDATE users 
+        SET FullName = CONCAT(@FirstName, ' ', @LastName), 
+            Email = @Email
+        WHERE Email = (SELECT Email FROM md_admins WHERE UserId = @UserId);
+
+
+
             UPDATE md_admins SET 
                 FirstName = @FirstName,
                 LastName = @LastName,

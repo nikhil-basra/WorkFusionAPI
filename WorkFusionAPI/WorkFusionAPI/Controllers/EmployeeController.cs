@@ -211,5 +211,23 @@ namespace WorkFusionAPI.Controllers
             return Ok(projects);
         }
 
+
+
+        //---------graphs-------------------------
+
+        [HttpGet("TasksCounts/{employeeId}")]
+        public async Task<IActionResult> GetTaskCounts(int employeeId)
+        {
+            try
+            {
+                var counts = await _taskService.GetTaskCountsAsync(employeeId);
+                return Ok(counts);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "An error occurred while retrieving task counts.", Details = ex.Message });
+            }
+        }
+
     }
 }

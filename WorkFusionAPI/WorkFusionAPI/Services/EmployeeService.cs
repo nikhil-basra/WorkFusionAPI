@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using System.Data;
 using WorkFusionAPI.Interfaces;
 using WorkFusionAPI.Models;
 using WorkFusionAPI.Utility;
@@ -90,60 +91,64 @@ namespace WorkFusionAPI.Services
         {
             employee.UpdatedAt = DateTime.Now;
 
-            // If EmployeeImage is provided, convert it to Base64 if it's not already in that format
+            // Process EmployeeImage for Base64 format if provided
             if (!string.IsNullOrEmpty(employee.EmployeeImage))
             {
                 try
                 {
-                    // If EmployeeImage is not Base64 encoded, try to convert it
                     if (!employee.EmployeeImage.StartsWith("data:image"))
                     {
-                        // Convert image to Base64 if it's not already in Base64
                         employee.EmployeeImage = Convert.ToBase64String(Convert.FromBase64String(employee.EmployeeImage));
                     }
                 }
                 catch (FormatException)
                 {
-                    // If it’s not in Base64 format, attempt to read it as a file path and convert it
                     var imageBytes = await File.ReadAllBytesAsync(employee.EmployeeImage);
                     employee.EmployeeImage = Convert.ToBase64String(imageBytes);
                 }
             }
             else
             {
-                // If no image is provided, retain the existing image
-                var existingEmployee = await GetEmployeeByIdAsync(employee.EmployeeId); // Get existing employee details
-
+                var existingEmployee = await GetEmployeeByIdAsync(employee.EmployeeId);
                 if (existingEmployee != null)
                 {
-                    employee.EmployeeImage = existingEmployee.EmployeeImage; // Retain the old image
+                    employee.EmployeeImage = existingEmployee.EmployeeImage;
                 }
             }
 
+            // SQL for updating Employee and User tables
             var query = @"
+
+ -- Update User table FullName and Email based on the previous email
+        UPDATE users 
+        SET FullName = CONCAT(@FirstName, ' ', @LastName), 
+            Email = @Email
+        WHERE Email = (SELECT Email FROM Employees WHERE EmployeeId = @EmployeeId);
+
         UPDATE Employees SET 
             FirstName = @FirstName,
             LastName = @LastName,
-            Gender = @Gender,          -- New field
+            Gender = @Gender,
             Email = @Email,
             Phone = @Phone,
             PresentAddress = @PresentAddress,
             PermanentAddress = @PermanentAddress,
-            IDType = @IDType,          -- New field
-            IDNumber = @IDNumber,      -- New field
+            IDType = @IDType,
+            IDNumber = @IDNumber,
             DateOfBirth = @DateOfBirth,
             DepartmentId = @DepartmentId,
             HireDate = @HireDate,
             CurrentSalary = @CurrentSalary,
             EmployeeImage = @EmployeeImage,
             UpdatedAt = @UpdatedAt
-        WHERE EmployeeId = @EmployeeId AND IsActive = true";
+        WHERE EmployeeId = @EmployeeId AND IsActive = true;";
 
             var parameters = new DynamicParameters(employee);
             var result = await _dbGateway.ExeQuery(query, parameters);
 
             return result > 0;
         }
+
 
 
         public async Task<List<EmployeeDto>> GetEmployeesByManagerIdAsync(int managerId)

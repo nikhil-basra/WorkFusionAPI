@@ -72,6 +72,15 @@ namespace WorkFusionAPI.Services
             }
 
             var query = @"
+
+                
+                 -- Update User table FullName and Email based on the previous email
+        UPDATE users 
+        SET FullName = CONCAT(@FirstName, ' ', @LastName), 
+            Email = @Email
+        WHERE Email = (SELECT Email FROM clients WHERE ClientId = @ClientId);
+
+
                 UPDATE clients SET 
                     FirstName = @FirstName,
                     LastName = @LastName,
