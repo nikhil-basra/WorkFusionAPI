@@ -17,6 +17,8 @@ namespace WorkFusionAPI.Controllers
         private readonly IUserService _userService;
         private readonly ITaskService _taskService;
         private readonly IProjectsService _projectsService;
+        private readonly INotificationService _notificationService;
+        private readonly ILeaveService _leaveService;
 
         public EmployeeController(
             IEmployeeService employeeService,
@@ -24,7 +26,9 @@ namespace WorkFusionAPI.Controllers
             IDepartmentService departmentService,
             IUserService userService,
             ITaskService taskService,
-            IProjectsService projectsService)
+            IProjectsService projectsService,
+            INotificationService notificationService,
+            ILeaveService leaveService)
         {
             _employeeService = employeeService;
             _imageService = imageService;
@@ -32,6 +36,8 @@ namespace WorkFusionAPI.Controllers
             _userService = userService;
             _taskService = taskService;
             _projectsService = projectsService;
+            _notificationService = notificationService;
+            _leaveService = leaveService;
         }
 
         //-------------------------------------employee--------------------------------//
@@ -228,6 +234,99 @@ namespace WorkFusionAPI.Controllers
                 return StatusCode(500, new { Message = "An error occurred while retrieving task counts.", Details = ex.Message });
             }
         }
+
+
+
+
+        //------------------------------notifications-------------------------------
+        [HttpGet("GetNotificationByEntityId/{entityId}/RoleId/{roleId}")]
+        public async Task<IActionResult> GetNotificationsByEntityAndRole(int entityId, int roleId)
+        {
+            var notifications = await _notificationService.GetNotificationsByEntityAndRole(entityId, roleId);
+            return Ok(notifications);
+        }
+
+
+        [HttpPut("markRead/{notificationId}")]
+        public async Task<IActionResult> MarkNotificationAsRead(int notificationId)
+        {
+            await _notificationService.MarkAsRead(notificationId);
+            return Ok(new { Message = "Notification marked as read" });
+        }
+
+
+        [HttpDelete("DeleteNotification/{notificationId}")]
+        public async Task<IActionResult> DeleteNotification(int notificationId)
+        {
+            await _notificationService.DeleteNotification(notificationId);
+            return Ok(new { Message = "Notification deleted successfully" });
+        }
+
+        [HttpGet("CountUnreadNotification/{entityId}/{roleId}")]
+        public async Task<IActionResult> CountUnreadNotifications(int entityId, int roleId)
+        {
+            try
+            {
+                var count = await _notificationService.CountUnreadNotificationsByEntityAndRole(entityId, roleId);
+                return Ok(new { UnreadCount = count });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = ex.Message });
+            }
+        }
+
+
+        //-----------------Leaves-------------------
+
+        //get leave requests list for employee
+        [HttpGet("GetEmployeeLeaves/{employeeId}")]
+        public async Task<IActionResult> GetEmployeeLeaves(int employeeId)
+        {
+            try
+            {
+                var leaves = await _leaveService.GetLeavesByEmployeeIdAsync(employeeId);
+                if (leaves == null || !leaves.Any())
+                {
+                    return NotFound("No leaves found for the employee.");
+                }
+                return Ok(leaves);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+
+        //Submit leaverequest
+        [HttpPost("submit-leave-request")]
+        public async Task<IActionResult> SubmitLeaveRequest([FromBody] LeaveModel leaveRequest)
+        {
+            try
+            {
+                var result = await _leaveService.SubmitLeaveRequestAsync(leaveRequest);
+
+                if (result)
+                {
+                    return Ok(new { message = "Leave request submitted successfully." });
+                }
+                else
+                {
+                    return BadRequest(new { message = "Failed to submit leave request." });
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // Directly returning the error response without logging.
+                return StatusCode(500, new { message = "An internal error occurred." });
+            }
+        }
+
 
     }
 }

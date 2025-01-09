@@ -5,16 +5,19 @@ using WorkFusionAPI.Utility;
 using Dapper;
 using WorkFusionAPI.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using MySqlX.XDevAPI.Common;
 
 namespace WorkFusionAPI.Services
 {
     public class ProjectsService : IProjectsService
     {
         private readonly DBGateway _dbGateway;
+        private readonly INotificationService _notificationService;
 
-        public ProjectsService(DBGateway dbGateway)
+        public ProjectsService(DBGateway dbGateway, INotificationService notificationService)
         {
             _dbGateway = dbGateway;
+            _notificationService = notificationService;
         }
 
         // Get all projects
@@ -161,6 +164,16 @@ LEFT JOIN
             // Execute the insert query
             var projectId = await _dbGateway.ExeQuery(insertQuery, parameters);
 
+            // Notify Manager or Client about the new project creation
+            await _notificationService.AddNotification(new NotificationModel
+            {
+                EntityId = project.ManagerId, // Assuming Manager gets notified
+                RoleId = 2,
+                Message = $"A new project '{project.ProjectName}' has been created By Manager Id = '{project.ManagerId}'",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+
             // Update IsActive in the clientsprojectrequests table
             var updateQuery = @"
         UPDATE clientsprojectrequests
@@ -175,6 +188,7 @@ LEFT JOIN
 
             return projectId;
         }
+
 
         // update project
         public async Task<int> UpdateProjectAsync(ProjectsModel project)
@@ -235,6 +249,16 @@ LEFT JOIN
             // Combine the query with the optional TeamMembers update
             string finalQuery = string.Format(updateQuery, teamMembersUpdate);
 
+            // Notify the manager or client about the project update
+            await _notificationService.AddNotification(new NotificationModel
+            {
+                EntityId = project.ManagerId, // Assuming Manager gets notified
+                RoleId = 2,
+                Message = $"Project '{project.ProjectName}' has been updated by Manager Id = '{project.ManagerId}'.",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+
             return await _dbGateway.ExecuteAsync(finalQuery, parameters);
         }
 
@@ -246,14 +270,27 @@ LEFT JOIN
             var parameters = new DynamicParameters();
             parameters.Add("ProjectId", projectId);
 
-            return await _dbGateway.ExecuteAsync(deleteQuery, parameters);
+            var result = await _dbGateway.ExecuteAsync(deleteQuery, parameters);
+
+            // Notify the manager or client about the project deletion
+            await _notificationService.AddNotification(new NotificationModel
+            {
+                EntityId = projectId, // Assuming Manager or Client is notified about deletion
+                RoleId=2,
+                Message = $"Project with ID {projectId} 'has been deleted.",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            return result;
         }
+
 
 
 
         //-------------get project by client id ------------------------//
 
-                    public async Task<IEnumerable<ProjectsModel>> GetProjectsByClientIdAsync(int clientId)
+        public async Task<IEnumerable<ProjectsModel>> GetProjectsByClientIdAsync(int clientId)
                     {
                         var query = @"
             SELECT 

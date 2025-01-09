@@ -20,6 +20,8 @@ namespace WorkFusionAPI.Controllers
         private readonly IClientService _clientService;
         private readonly IEmployeeService _employeeService;
         private readonly ITaskService _taskService;
+        private readonly INotificationService _notificationService;
+        private readonly ILeaveService _leaveService;
 
         public ManagerController(
             IImageService imageService,
@@ -29,7 +31,9 @@ namespace WorkFusionAPI.Controllers
             IClientsProjectRequestsService clientsProjectRequestsService,
              IClientService clientService,
              IEmployeeService employeeService,
-             ITaskService taskService
+             ITaskService taskService,
+             INotificationService notificationService,
+             ILeaveService leaveService
             )
         {
             _imageService = imageService;
@@ -40,6 +44,8 @@ namespace WorkFusionAPI.Controllers
             _clientService = clientService;
             _employeeService = employeeService;
             _taskService = taskService;
+            _notificationService = notificationService;
+            _leaveService = leaveService;
         }
 
         //-------------------------------------------------employee--------------------------------
@@ -417,6 +423,181 @@ namespace WorkFusionAPI.Controllers
             {
                 return StatusCode(500, ex.Message);
             }
+        }
+
+
+
+        //------------------------------notifications-------------------------------
+        [HttpGet("GetNotificationByEntityId/{entityId}/RoleId/{roleId}")]
+        public async Task<IActionResult> GetNotificationsByEntityAndRole(int entityId, int roleId)
+        {
+            var notifications = await _notificationService.GetNotificationsByEntityAndRole(entityId, roleId);
+            return Ok(notifications);
+        }
+
+
+        [HttpPost]
+        public async Task<IActionResult> CreateNotification(NotificationModel notification)
+        {
+            await _notificationService.AddNotification(notification);
+            return Ok(new { Message = "Notification created successfully" });
+        }
+
+        [HttpGet("{userId}")]
+        public async Task<IActionResult> GetNotifications(int userId)
+        {
+            var notifications = await _notificationService.GetNotificationsByUserId(userId);
+            return Ok(notifications);
+        }
+
+
+        [HttpPut("markRead/{notificationId}")]
+        public async Task<IActionResult> MarkNotificationAsRead(int notificationId)
+        {
+            await _notificationService.MarkAsRead(notificationId);
+            return Ok(new { Message = "Notification marked as read" });
+        }
+
+
+        [HttpDelete("DeleteNotification/{notificationId}")]
+        public async Task<IActionResult> DeleteNotification(int notificationId)
+        {
+            await _notificationService.DeleteNotification(notificationId);
+            return Ok(new { Message = "Notification deleted successfully" });
+        }
+
+
+        [HttpGet("CountUnreadNotification/{entityId}/{roleId}")]
+        public async Task<IActionResult> CountUnreadNotifications(int entityId, int roleId)
+        {
+            try
+            {
+                var count = await _notificationService.CountUnreadNotificationsByEntityAndRole(entityId, roleId);
+                return Ok(new { UnreadCount = count });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = ex.Message });
+            }
+        }
+
+
+        //----------------------Leaves Approval--------------------------------
+
+
+        //Get Leaverequests for manager
+        [HttpGet("GetLeaveRequestsByManager/{managerId}")]
+        public async Task<IActionResult> GetLeaveRequestsByManager(int managerId)
+        {
+            var leaveRequests = await _leaveService.GetLeaveRequestsByManagerAsync(managerId);
+
+            if (leaveRequests == null || !leaveRequests.Any())
+            {
+                return NotFound("No leave requests found for this manager.");
+            }
+
+            return Ok(leaveRequests);
+        }
+
+        //Get Pending leave requests list
+        [HttpGet("manager/{managerId}/pending")]
+        public async Task<IActionResult> GetPendingLeaveRequestsForManager(int managerId)
+        {
+            try
+            {
+                var leaveRequests = await _leaveService.GetPendingLeaveRequestsByManagerAsync(managerId);
+                if (!leaveRequests.Any())
+                {
+                    return NotFound("No pending leave requests found for this manager.");
+                }
+
+                return Ok(leaveRequests);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        //Get Rejected Leave Requests List
+        [HttpGet("manager/{managerId}/rejected")]
+        public async Task<IActionResult> GetRejectedLeaveRequestsForManager(int managerId)
+        {
+            try
+            {
+                var leaveRequests = await _leaveService.GetRejectedLeaveRequestsByManagerAsync(managerId);
+                if (!leaveRequests.Any())
+                {
+                    return NotFound("No rejected leave requests found for this manager.");
+                }
+
+                return Ok(leaveRequests);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        //approve leave requests
+        [HttpGet("approved-leave-requests/{managerId}")]
+        public async Task<IActionResult> GetApprovedLeaveRequests(int managerId)
+        {
+            try
+            {
+                var approvedLeaves = await _leaveService.GetApprovedLeaveRequestsByManagerAsync(managerId);
+
+                if (approvedLeaves == null || !approvedLeaves.Any())
+                {
+                    return NotFound("No approved leave requests found for this manager.");
+                }
+
+                return Ok(approvedLeaves);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while fetching approved leave requests: {ex.Message}");
+            }
+        }
+
+
+        // Accept leave request
+        [HttpPost("leave-requests/{leaveId}/accept")]
+        public async Task<IActionResult> AcceptLeaveRequest(int leaveId, [FromQuery] int? managerId)
+        {
+            if (!managerId.HasValue)
+            {
+                return BadRequest(new { message = "ManagerId cannot be null." });
+            }
+
+            var result = await _leaveService.AcceptLeaveRequestAsync(leaveId, managerId.Value);
+
+            if (result)
+            {
+                return Ok(new { message = "Leave request approved successfully." });
+            }
+
+            return NotFound(new { message = "Leave request not found or already processed." });
+        }
+
+
+        //Reject leave request
+        [HttpPost("leave-requests/{leaveId}/reject")]
+        public async Task<IActionResult> RejectLeaveRequest(int leaveId, [FromQuery] int? managerId)
+        {
+            if (!managerId.HasValue)
+            {
+                return BadRequest("ManagerId cannot be null.");
+            }
+
+            var result = await _leaveService.RejectLeaveRequestAsync(leaveId, managerId.Value);
+
+            if (result)
+            {
+                return Ok(new { message = "Leave request rejected successfully." });
+            }
+
+            return NotFound(new { message = "Leave request not found or already processed." });
         }
 
     }

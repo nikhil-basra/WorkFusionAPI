@@ -68,7 +68,8 @@ builder.Services.AddScoped<IClientsProjectRequestsService, ClientsProjectRequest
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
-
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ILeaveService, LeaveService>();
 
 
 var app = builder.Build();
